@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+
+  web1:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    command: /bin/sh -c "echo 'Hello World! Server 1' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+    networks:
+      balancer:
+
+  web2:
+    image: nginx:alpine
+    ports:
+      - "8081:80"
+    command: /bin/sh -c "echo 'Hello World! Server 2' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+    networks:
+      balancer:
+
+  haproxy:
+    image: haproxy:2.2
+    restart: always
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    ports:
+      - "80:80"
+    networks:
+      balancer:
+
+  keepalived:
+    image: osixia/keepalived:latest
+    restart: always
+    cap_add:
+      - NET_ADMIN
+    networks:
+      balancer:
+    environment:
+      - KEEPALIVED_UNICAST_PEERS=172.17.0.4
+      - KEEPALIVED_VIRTUAL_IPS=172.17.0.3/24
+      - KEEPALIVED_PRIORITY=200
+    volumes:
+      - ./keepalived/keepalived.conf:/etc/keepalived/keepalived.conf
+
+networks:
+  balancer:
